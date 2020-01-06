@@ -141,7 +141,6 @@ services:
       - bash 
       - -c 
       - |
-
         echo "Installing connector plugins"
         # confluent-hub install --no-prompt jcustenborder/kafka-connect-twitter:0.3.33
         confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.3.2
@@ -152,6 +151,24 @@ services:
         /etc/confluent/docker/run & 
         #
         sleep infinity
+         # command: 
+    
+      command: 
+      # In the command section, $ are replaced with $$ to avoid the error 'Invalid interpolation format for "command" option'
+      # - bash 
+      # - -c 
+      # - |
+      #   echo "Installing connector plugins"
+      #   # confluent-hub install --no-prompt jcustenborder/kafka-connect-twitter:0.3.33
+      #   # confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.3.2
+      #   # confluent-hub install --no-prompt confluentinc/kafka-connect-syslog:latest
+      #   # confluent-hub install --no-prompt debezium/debezium-connector-mysql:latest
+      #   # confluent-hub install --no-prompt neo4j/kafka-connect-neo4j:1.0.2
+      #   #
+      #   echo "Launching Kafka Connect worker"
+      #   /etc/confluent/docker/run & 
+      #   #
+      #   sleep infinity
 
   postgres:
 
@@ -216,19 +233,19 @@ services:
 
 
 =======================================================================================================
-SOURCE CONNECTOR FOR MYSQL
+### SOURCE CONNECTOR FOR MYSQL
 =======================================================================================================
-CREATE SOURCE CONNECTOR `jdbc-connector-mysql` WITH(
+CREATE SOURCE CONNECTOR `debezium-connector-mysql` WITH(
   "connector.class"='io.debezium.connector.mysql.MySqlConnector',
   "database.hostname"='mysql',
   "database.port"=3306,
   "database.user"='root',
   "database.password"='root',
   "database.server.id"=4209,
-  "database.server.name"='cust',
-  "database.whitelist"='cust360',
+  "database.server.name"='conn',
+  "database.whitelist"='user',
   "database.history.kafka.bootstrap.servers"='broker:29092',
-  "database.history.kafka.topic"='dbhistory.company',
+  "database.history.kafka.topic"='dbhistory.user_details',
   "database.allowPublicKeyRetrieval"='true',
   "include.schema.changes"='true',
   "transforms"='unwrap',
@@ -238,32 +255,20 @@ CREATE SOURCE CONNECTOR `jdbc-connector-mysql` WITH(
   "key.converter.schemas.enable"='false',
   "value.converter.schemas.enable"='false'
 );
-# customer360_msql.cust360.company
-# "transforms"='unwrap',
-#   "transforms.unwrap.type"='io.debezium.transforms.UnwrapFromEnvelope',
-#   "key.converter"='io.confluent.connect.avro.AvroConverter',
-#   "value.converter"='io.confluent.connect.avro.AvroConverter',
-#   "key.converter.schemas.enable"='false',
-#   "value.converter.schemas.enable"='false'
-#   "schema.registry.url"='http://schema-registry:8081',
-
-  # "connection.url"='jdbc:mysql://mysql:3306/testdb',
-  # "tasks.max"=1,
-  # "database.whitelist"='user',
 
 =======================================================================================================
-SOURCE CONNECTOR FOR POSTGRESQL
+### SOURCE CONNECTOR FOR POSTGRESQL
 =======================================================================================================
-CREATE SOURCE CONNECTOR `jdbc-connector` WITH(
+CREATE SOURCE CONNECTOR `jdbc-connector-postgresql` WITH(
   "connector.class"='io.confluent.connect.jdbc.JdbcSourceConnector', 
-  "connection.url"='jdbc:postgresql://localhost:5432/postgres?username=postgres&password=h0ttestt', 
+  "connection.url"='jdbc:postgresql://postgres:5432/purchase?username=root&password=h0ttestt', 
   "mode"='bulk', 
   "topic.prefix"='jdbc_', 
-  "key"='company_id');
+  "key"='id');
 
 
 =======================================================================================================
-SINK CONNECTOR FOR POSTGRESQL
+### SINK CONNECTOR FOR POSTGRESQL
 =====================================================================================
 
 CREATE SINK CONNECTOR SINK_POSTGRES_LAGOS_TWEETS WITH (
@@ -282,9 +287,9 @@ KSQLDB REST API
 curl -X "POST" "http://localhost:8088/query" \
      -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" \
      -d $'{
-  "ksql": "SELECT * FROM WORKER_COMBINED EMIT CHANGES;",
+  "ksql": "SELECT * FROM INVOICE_AVG_ITEM EMIT CHANGES;",
   "streamsProperties": {
-    "ksql.streams.auto.offset.reset": "latest"
+    "ksql.streams.auto.offset.reset": "earliest"
   }
 }'
 
@@ -308,3 +313,25 @@ docker run --name postgres -v ${PWD}:/opt/demo -e POSTGRES_PASSWORD=h0ttestt -d 
 
 ### Load script
 docker exec -it postgres psql -U postgres -f /opt/demo/script.sql
+
+
+### Create csv test data
+curl "https://api.mockaroo.com/api/58605010?count=1000&key=25fd9c80" > "data/csv-spooldir-source.csv"
+
+### CSV source connector
+name=CsvSchemaSpoolDir
+tasks.max=1
+connector.class=com.github.jcustenborder.kafka.connect.spooldir.SpoolDirCsvSourceConnector
+input.path=/path/to/data
+input.file.pattern=csv-spooldir-source.csv
+error.path=/path/to/error
+finished.path=/path/to/finished
+halt.on.error=false
+topic=spooldir-testing-topic
+csv.first.row.as.header=true
+key.schema={\n  \"name\" : \"com.example.users.UserKey\",\n  \"type\" : \"STRUCT\",\n  \"isOptional\" : false,\n  \"fieldSchemas\" : {\n    \"id\" : {\n      \"type\" : \"INT64\",\n      \"isOptional\" : false\n    }\n  }\n}
+value.schema={\n  \"name\" : \"com.example.users.User\",\n  \"type\" : \"STRUCT\",\n  \"isOptional\" : false,\n  \"fieldSchemas\" : {\n    \"id\" : {\n      \"type\" : \"INT64\",\n      \"isOptional\" : false\n    },\n    \"first_name\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"last_name\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"email\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"gender\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"ip_address\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"last_login\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"account_balance\" : {\n      \"name\" : \"org.apache.kafka.connect.data.Decimal\",\n      \"type\" : \"BYTES\",\n      \"version\" : 1,\n      \"parameters\" : {\n        \"scale\" : \"2\"\n      },\n      \"isOptional\" : true\n    },\n    \"country\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"favorite_color\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    }\n  }\n}
+
+
+## Blockers 
+https://github.com/confluentinc/cp-docker-images/issues/770

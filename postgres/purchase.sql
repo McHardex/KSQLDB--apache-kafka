@@ -1,12 +1,12 @@
 CREATE DATABASE purchase;
 \c purchase
-CREATE TABLE user_purchase (user_id int, item varchar, purchase_cost bigint);
+CREATE TABLE user_purchase (id serial PRIMARY KEY, user_id INT NOT NULL, item VARCHAR (30) NOT NULL, purchase_cost INT NOT NULL);
 INSERT INTO user_purchase (user_id, item, purchase_cost) values (2, 'book', 10);
-INSERT INTO user_purchase (user_id, item, purchase_cost) values (3, 'book', 10);
-INSERT INTO user_purchase (user_id, item, purchase_cost) values (4, 'book', 10);
-INSERT INTO user_purchase (user_id, item, purchase_cost) values (5, 'book', 10);
-INSERT INTO user_purchase (user_id, item, purchase_cost) values (6, 'book', 10);
-INSERT INTO user_purchase (user_id, item, purchase_cost) values (7, 'book', 10);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (3, 'bell', 1340);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (4, 'house', 523);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (5, 'rock', 232);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (6, 'car', 209);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (7, 'glasses', 150);
 INSERT INTO user_purchase (user_id, item, purchase_cost) values (8, 'book', 10);
 INSERT INTO user_purchase (user_id, item, purchase_cost) values (9, 'book', 102);
 INSERT INTO user_purchase (user_id, item, purchase_cost) values (10, 'book', 104);

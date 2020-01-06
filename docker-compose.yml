@@ -104,20 +104,19 @@ services:
       # External secrets config
       CONNECT_CONFIG_PROVIDERS: 'file'
       CONNECT_CONFIG_PROVIDERS_FILE_CLASS: 'org.apache.kafka.common.config.provider.FileConfigProvider'
-    # volumes:
-    #   - ${PWD}/credentials.properties:/data/credentials.properties
+    volumes:
+      - C:\Users\User01\Downloads\connectors:/data/connect-jars
     command: 
       # In the command section, $ are replaced with $$ to avoid the error 'Invalid interpolation format for "command" option'
       - bash 
       - -c 
       - |
         echo "Installing connector plugins"
+        # confluent-hub install --no-prompt debezium/debezium-connector-mysql:latest
         # confluent-hub install --no-prompt jcustenborder/kafka-connect-twitter:0.3.33
-        confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.3.2
+        # confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.3.2
         # confluent-hub install --no-prompt confluentinc/kafka-connect-syslog:latest
-        confluent-hub install --no-prompt debezium/debezium-connector-mysql:latest
         # confluent-hub install --no-prompt neo4j/kafka-connect-neo4j:1.0.2
-        #
         echo "Launching Kafka Connect worker"
         /etc/confluent/docker/run & 
         #
@@ -133,7 +132,7 @@ services:
     ports: 
      - 5432:5432
     environment:
-     - POSTGRES_USER=postgres
+     - POSTGRES_USER=root
      - POSTGRES_PASSWORD=h0ttestt
     volumes:
      - ./postgres/purchase.sql:/docker-entrypoint-initdb.d/purchase.sql
