@@ -1,0 +1,25 @@
+CREATE DATABASE purchase;
+\c purchase
+CREATE TABLE user_purchase (user_id int, item varchar, purchase_cost bigint);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (2, 'book', 10);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (3, 'book', 10);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (4, 'book', 10);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (5, 'book', 10);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (6, 'book', 10);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (7, 'book', 10);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (8, 'book', 10);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (9, 'book', 102);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (10, 'book', 104);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (11, 'book', 1032);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (12, 'book', 105);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (13, 'book', 102);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (14, 'book', 103);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (15, 'book', 990);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (16, 'pen', 100);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (17, 'pen', 100);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (17, 'pen', 100);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (18, 'pen', 100);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (19, 'pen', 100);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (20, 'flight ticket', 200);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (21, 'flight ticket', 200);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (22, 'flight ticket', 200);

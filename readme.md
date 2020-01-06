@@ -1,0 +1,310 @@
+---
+version: '2'
+
+services:
+  zookeeper:
+
+    image: confluentinc/cp-zookeeper:5.3.1
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+
+      - "2181:2181"
+
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+
+    image: confluentinc/cp-enterprise-kafka:5.3.1
+    hostname: broker
+    container_name: broker
+    depends_on:
+
+      - zookeeper
+
+    ports:
+
+      - 9092:9092
+
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,HOST://localhost:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
+
+  
+  schema-registry:
+
+    image: confluentinc/cp-schema-registry:5.3.1
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+
+      - broker
+
+    ports:
+
+      - 8081:8081
+
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://broker:29092
+      SCHEMA_REGISTRY_CUB_KAFKA_TIMEOUT: 300
+
+  ksqldb-server:
+
+    image: confluentinc/ksqldb-server:0.6.0
+    hostname: ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+
+      - broker
+      - connect
+
+    ports:
+
+      - 8088:8088
+
+    environment:
+      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_BOOTSTRAP_SERVERS: broker:29092
+      KSQL_KSQL_SERVICE_ID: ksql_service
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: "true"
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: "true"
+      KSQL_KSQL_CONNECT_URL: http://connect:8083
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+
+  ksqldb-cli:
+
+    image: confluentinc/ksqldb-cli:0.6.0
+    container_name: ksqldb-cli
+    depends_on:
+
+      - ksqldb-server
+
+    entrypoint: /bin/sh
+    tty: true
+
+  connect:
+
+    image: confluentinc/cp-kafka-connect:5.3.1
+    hostname: connect
+    container_name: connect
+    depends_on:
+
+      - broker
+      - schema-registry
+
+    ports:
+
+      - 8083:8083
+
+    environment:
+      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
+      CONNECT_CUB_KAFKA_TIMEOUT: 300
+      CONNECT_BOOTSTRAP_SERVERS: "broker:29092"
+      CONNECT_REST_ADVERTISED_HOST_NAME: 'connect'
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-group-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-group-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: connect-group-status
+      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONNECT_INTERNAL_KEY_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'
+      CONNECT_INTERNAL_VALUE_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'
+      CONNECT_LOG4J_ROOT_LOGLEVEL: 'INFO'
+      CONNECT_LOG4J_LOGGERS: 'org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR'
+      CONNECT_LOG4J_LOGGERS: 'org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR,org.eclipse.jetty.server=DEBUG'
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: '1'
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: '1'
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: '1'
+      CONNECT_PLUGIN_PATH: '/usr/share/java,/usr/share/confluent-hub-components/,/data/connect-jars'
+      # External secrets configZ
+      CONNECT_CONFIG_PROVIDERS: 'file'
+      CONNECT_CONFIG_PROVIDERS_FILE_CLASS: 'org.apache.kafka.common.config.provider.FileConfigProvider'
+    volumes:
+
+      - ${PWD}/credentials.properties:/data/credentials.properties
+
+    command: 
+      # In the command section, $ are replaced with $ to avoid the error 'Invalid interpolation format for "command" option'
+
+      - bash 
+      - -c 
+      - |
+
+        echo "Installing connector plugins"
+        # confluent-hub install --no-prompt jcustenborder/kafka-connect-twitter:0.3.33
+        confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.3.2
+        # confluent-hub install --no-prompt confluentinc/kafka-connect-syslog:latest
+        confluent-hub install --no-prompt neo4j/kafka-connect-neo4j:1.0.2
+        #
+        echo "Launching Kafka Connect worker"
+        /etc/confluent/docker/run & 
+        #
+        sleep infinity
+
+  postgres:
+
+    # *-----------------------------*
+    # To connect to the DB:
+    #   docker exec -it postgres bash -c 'psql -U $POSTGRES_USER $POSTGRES_DB'
+    # *-----------------------------*
+    image: postgres:latest
+    container_name: postgres
+    ports: 
+
+      - 5432:5432
+
+    environment:
+     - POSTGRES_USER=root
+     - POSTGRES_DB=onboarding
+     - POSTGRES_PASSWORD=h0ttestt
+    volumes:
+     - ./data/postgres:/docker-entrypoint-initdb.d/
+
+  mysql:
+
+    # *-----------------------------*
+    # To connect to the DB: 
+    #   docker-compose exec mysql bash -c 'mysql -u root -p$MYSQL_ROOT_PASSWORD'
+    #   docker-compose exec mysql bash -c 'mysql -u root -p mysql-testdb'
+    # *-----------------------------*
+    image: mysql
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: h0ttestt
+      MYSQL_USER: root
+      MYSQL_PASSWORD: h0ttestt
+      MYSQL_DATABASE: mysql-testdb
+
+  # sqlite:
+  #   # *-----------------------------*
+  #   # To connect to the DB: 
+  #   #   docker-compose exec mysql bash -c 'mysql -u root -p$MYSQL_ROOT_PASSWORD'
+  #   #   docker-compose exec mysql bash -c 'mysql -u root -p mysql-testdb'
+  #   # *-----------------------------*
+  #   image: nouchka/sqlite3
+  #   container_name: sqlite
+  #   environment:
+  #     SQLITE_USER: mchardex
+  #     SQLITE_PASSWORD: h0ttestt
+  #     SQLITE_DATABASE: SQLITE-testdb
+
+  neo4j:
+
+    image: neo4j:3.5-enterprise
+    container_name: neo4j
+    ports:
+
+    - "7474:7474"
+    - "7687:7687"
+
+    environment:
+      NEO4J_AUTH: neo4j/connect
+      NEO4J_dbms_memory_heap_max__size: 8G
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
+
+
+=======================================================================================================
+SOURCE CONNECTOR FOR MYSQL
+=======================================================================================================
+CREATE SOURCE CONNECTOR `jdbc-connector-mysql` WITH(
+  "connector.class"='io.debezium.connector.mysql.MySqlConnector',
+  "database.hostname"='mysql',
+  "database.port"=3306,
+  "database.user"='root',
+  "database.password"='root',
+  "database.server.id"=4209,
+  "database.server.name"='cust',
+  "database.whitelist"='cust360',
+  "database.history.kafka.bootstrap.servers"='broker:29092',
+  "database.history.kafka.topic"='dbhistory.company',
+  "database.allowPublicKeyRetrieval"='true',
+  "include.schema.changes"='true',
+  "transforms"='unwrap',
+  "transforms.unwrap.type"='io.debezium.transforms.UnwrapFromEnvelope',
+  "key.converter"='org.apache.kafka.connect.json.JsonConverter',
+  "value.converter"='org.apache.kafka.connect.json.JsonConverter',
+  "key.converter.schemas.enable"='false',
+  "value.converter.schemas.enable"='false'
+);
+# customer360_msql.cust360.company
+# "transforms"='unwrap',
+#   "transforms.unwrap.type"='io.debezium.transforms.UnwrapFromEnvelope',
+#   "key.converter"='io.confluent.connect.avro.AvroConverter',
+#   "value.converter"='io.confluent.connect.avro.AvroConverter',
+#   "key.converter.schemas.enable"='false',
+#   "value.converter.schemas.enable"='false'
+#   "schema.registry.url"='http://schema-registry:8081',
+
+  # "connection.url"='jdbc:mysql://mysql:3306/testdb',
+  # "tasks.max"=1,
+  # "database.whitelist"='user',
+
+=======================================================================================================
+SOURCE CONNECTOR FOR POSTGRESQL
+=======================================================================================================
+CREATE SOURCE CONNECTOR `jdbc-connector` WITH(
+  "connector.class"='io.confluent.connect.jdbc.JdbcSourceConnector', 
+  "connection.url"='jdbc:postgresql://localhost:5432/postgres?username=postgres&password=h0ttestt', 
+  "mode"='bulk', 
+  "topic.prefix"='jdbc_', 
+  "key"='company_id');
+
+
+=======================================================================================================
+SINK CONNECTOR FOR POSTGRESQL
+=====================================================================================
+
+CREATE SINK CONNECTOR SINK_POSTGRES_LAGOS_TWEETS WITH (
+   'connector.class'     = 'io.confluent.connect.jdbc. JdbcSinkConnector', 
+   'connection.url'      = 'jdbc:postgresql://postgres:5432/postgres?username=root&password=h0ttestt', 
+   'topics'              = 'LAGOS_TWEETS', 
+   'key.converter'       = 'org.apache.kafka.connect.storage. StringConverter', 
+   'auto.create'         = 'true'
+   ); 
+
+
+=======================================================================================================
+KSQLDB REST API
+=======================================================================================================
+
+curl -X "POST" "http://localhost:8088/query" \
+     -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" \
+     -d $'{
+  "ksql": "SELECT * FROM WORKER_COMBINED EMIT CHANGES;",
+  "streamsProperties": {
+    "ksql.streams.auto.offset.reset": "latest"
+  }
+}'
+
+=============================================================
+docker-compose exec ksqldb-cli ksql http://ksqldb-server:8088
+
+
+### Bugs and Fixes
+Debezium mysql source connector
+[debezium](https://rmoff.net/2019/10/23/debezium-mysql-v8-public-key-retrieval-is-not-allowed/)
+ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
+
+### connect to ksqldb cli
+docker-compose exec ksqldb-cli ksql http://ksqldb-server:8088
+
+docker exec -it postgres psql -U postgres
+
+## Automate script
+#### Mount file inside running postgres bash file directories
+docker run --name postgres -v ${PWD}:/opt/demo -e POSTGRES_PASSWORD=h0ttestt -d postgres
+
+### Load script
+docker exec -it postgres psql -U postgres -f /opt/demo/script.sql
