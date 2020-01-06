@@ -315,22 +315,57 @@ docker run --name postgres -v ${PWD}:/opt/demo -e POSTGRES_PASSWORD=h0ttestt -d 
 docker exec -it postgres psql -U postgres -f /opt/demo/script.sql
 
 
-### Create csv test data
+### Create csv sample test data
 curl "https://api.mockaroo.com/api/58605010?count=1000&key=25fd9c80" > "data/csv-spooldir-source.csv"
 
+
+===================================================================================================
 ### CSV source connector
-name=CsvSchemaSpoolDir
-tasks.max=1
-connector.class=com.github.jcustenborder.kafka.connect.spooldir.SpoolDirCsvSourceConnector
-input.path=/path/to/data
-input.file.pattern=csv-spooldir-source.csv
-error.path=/path/to/error
-finished.path=/path/to/finished
-halt.on.error=false
-topic=spooldir-testing-topic
-csv.first.row.as.header=true
-key.schema={\n  \"name\" : \"com.example.users.UserKey\",\n  \"type\" : \"STRUCT\",\n  \"isOptional\" : false,\n  \"fieldSchemas\" : {\n    \"id\" : {\n      \"type\" : \"INT64\",\n      \"isOptional\" : false\n    }\n  }\n}
-value.schema={\n  \"name\" : \"com.example.users.User\",\n  \"type\" : \"STRUCT\",\n  \"isOptional\" : false,\n  \"fieldSchemas\" : {\n    \"id\" : {\n      \"type\" : \"INT64\",\n      \"isOptional\" : false\n    },\n    \"first_name\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"last_name\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"email\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"gender\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"ip_address\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"last_login\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"account_balance\" : {\n      \"name\" : \"org.apache.kafka.connect.data.Decimal\",\n      \"type\" : \"BYTES\",\n      \"version\" : 1,\n      \"parameters\" : {\n        \"scale\" : \"2\"\n      },\n      \"isOptional\" : true\n    },\n    \"country\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    },\n    \"favorite_color\" : {\n      \"type\" : \"STRING\",\n      \"isOptional\" : true\n    }\n  }\n}
+===================================================================================================
+
+CREATE SOURCE CONNECTOR `CsvSchemaSpoolDir` WITH(
+  "tasks.max"=1,
+  "connector.class"='com.github.jcustenborder.kafka.connect.spooldir.SpoolDirCsvSourceConnector',
+  "input.path"='./csv',
+  "input.file.pattern"='csv-spooldir-source.csv',
+  "error.path"='./csv',
+  "finished.path"='/csv',
+  "halt.on.error"=false,
+  "topic"='spooldir-testing-topic',
+  "csv.first.row.as.header"=true,
+  "key.schema"=
+  '{
+    "name": "com.example.users.UserKey",
+    "type": "STRUCT",
+    "isOptional": false,
+    "fieldSchemas": {
+      "id": {"type": "INT64", "isOptional": false}
+    }
+  }',
+  "value.schema"=
+  '{
+      "name": "com.example.users.User",
+      "type": "STRUCT",
+      "isOptional" : false,
+      "fieldSchemas": {
+        "id": { "type": "INT64", "isOptional: false }
+      },
+      first_name: { type : "STRING", isOptional: true },
+      last_name: { type: "STRING", isOptional: true },
+      email: { type: "STRING", isOptional: true },
+      gender: { type: STRING, isOptional: true },
+      ip_address: { type: "STRING", isOptional: true },
+      last_login: { type: "STRING", isOptional: true },
+      account_balance: { name: "org.apache.kafka.connect.data.Decimal",
+        type: "BYTES",
+        version: 1,
+        parameters: {scale: 2},
+        isOptional: true
+      },
+      country: { type: "STRING", isOptional: true },
+      favorite_color: { type: "STRING", isOptional : true }
+    }'
+);
 
 
 ## Blockers 
