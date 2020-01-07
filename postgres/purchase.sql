@@ -22,4 +22,4 @@ INSERT INTO user_purchase (user_id, item, purchase_cost) values (18, 'pen', 100)
 INSERT INTO user_purchase (user_id, item, purchase_cost) values (19, 'pen', 100);
 INSERT INTO user_purchase (user_id, item, purchase_cost) values (20, 'flight ticket', 200);
 INSERT INTO user_purchase (user_id, item, purchase_cost) values (21, 'flight ticket', 200);
-INSERT INTO user_purchase (user_id, item, purchase_cost) values (22, 'flight ticket', 200);
+INSERT INTO user_purchase (user_id, item, purchase_cost) values (6000, 'helicopter', 2000);
