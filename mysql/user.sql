@@ -14,4 +14,4 @@ INSERT INTO user_details (user_id, name) values (11,  'Lola James');
 INSERT INTO user_details (user_id, name) values (12,  'Bolatito Samuel');
 INSERT INTO user_details (user_id, name) values (13,  'Ola Kehinde');
 INSERT INTO user_details (user_id, name) values (14,  'Iseoluwa Ileri');
-INSERT INTO user_details (user_id, name) values (15,  'Jonathan Nelson');
+INSERT INTO user_details (user_id, name) values (6000,  'Olukunle Abolade');
