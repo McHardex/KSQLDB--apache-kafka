@@ -187,15 +187,37 @@ services:
   #     NEO4J_ACCEPT_LICENSE_AGREEMENT: 'yes'
 
 
+## GETTING STARTED
+
+- Kafka is a distributed streaming platform used to publish and subscribe to streams of records
+- Kafka is used for fault tolerant
+- kafka allow apps to process streams of records as they occur.
+
+
+USE
++ building real time streaming data pipelines
+    - that reliably get data between systems or applications.receiving and pushing to other systems(elastic search, neo4j, graph database).
+    - that transform or react to streams of data. e,g theft transaction check
+
+
+ksqldb is an event streaming database that is purposely build for stream processing applications
+- Three foundational categories to building a streaming application with ksqldb
+  - collections: data from different sources
+  - stream processing: collection transformation, filter, aggregation and join 
+  - queries: performing look ups
+
+- stream : immutable, append-only. used for representing series of historical facts
+- tables: mutable, allow for representing latest version of each value per key
+
 #### Connect to ksqldb-cli
-```
 docker-compose exec ksqldb-cli ksql http://ksqldb-server:8088
 ```
 
 ## SOURCE AND SINK CONNECTORS
-=======================================================================================================
+==============================================================
 ### SOURCE CONNECTOR FOR MYSQL
-=======================================================================================================
+==============================================================
+
 ```
 CREATE SOURCE CONNECTOR `debezium-connector-mysql` WITH(
    "connector.class"='io.debezium.connector.mysql.MySqlConnector',
@@ -219,22 +241,26 @@ CREATE SOURCE CONNECTOR `debezium-connector-mysql` WITH(
 );
 ```
 
-=======================================================================================================
+==============================================================
 ### SOURCE CONNECTOR FOR POSTGRESQL
-=======================================================================================================
+==============================================================
+
 ```
 CREATE SOURCE CONNECTOR `jdbc-connector-postgresql` WITH(
   "connector.class"='io.confluent.connect.jdbc.JdbcSourceConnector', 
   "connection.url"='jdbc:postgresql://postgres:5432/purchase?username=root&password=h0ttestt', 
-  "mode"='bulk', 
-  "topic.prefix"='jdbc_', 
-  "key"='user_id'
+  "mode"='timestamp+incrementing', 
+  "timestamp.column.name"='modified',
+  "incrementing.column.name"='id',
+  "validate.non.null"='true',
+  "key"='user_id',
+  "topic.prefix"='jdbc_'
 );
 ```
 
-=======================================================================================================
+==============================================================
 ### SINK CONNECTOR FOR POSTGRESQL
-=====================================================================================
+==============================================================
 ```
 CREATE SINK CONNECTOR SINK_POSTGRES_LAGOS_TWEETS WITH (
   'connector.class'='io.confluent.connect.jdbc. JdbcSinkConnector', 
@@ -310,21 +336,24 @@ CREATE TABLE invoice_sum_item AS SELECT item, SUM(cost) AS sum_of_items_purchase
 
 ### Pull Queries
 ```
-select * from INVOICE_SUM_ITEM WHERE rowkey='bell';
+select * from INVOICE_SUM_ITEM WHERE rowkey='bell'; 
 ```
 
-outcome
+- outcome
+
+```
 select * from INVOICE_TT emit changes;
 select * from INVOICE_SUM_ITEM WHERE rowkey='bell';
+```
 
-=======================================================================================================
+==============================================================
 ### KSQLDB REST API
-=======================================================================================================
+==============================================================
 ```
 curl -X "POST" "http://localhost:8088/query" \
-     -H "Content-Type: application/vnd.ksql.v1+json; charset=utf-8" \
+     -H "Content-Type: application/json; charset=utf-8" \
      -d $'{
-       "ksql": "select * from INVOICE_TT emit changes;",
+       "ksql": "select * from USER_S emit changes;",
   "streamsProperties": {
     "ksql.streams.auto.offset.reset": "earliest"
   }
