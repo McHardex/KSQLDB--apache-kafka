@@ -112,8 +112,8 @@ services:
       # External secrets config
       CONNECT_CONFIG_PROVIDERS: 'file'
       CONNECT_CONFIG_PROVIDERS_FILE_CLASS: 'org.apache.kafka.common.config.provider.FileConfigProvider'
-    # volumes:
-    #   - C:\Users\User01\Downloads\connectors:/data/connect-jars
+    volumes:
+      - C:\Users\User01\Downloads\connectors:/data/connect-jars
     #   - ./csv:/data/csv
     command: 
       # In the command section, $ are replaced with $$ to avoid the error 'Invalid interpolation format for "command" option'
@@ -121,9 +121,9 @@ services:
       - -c 
       - |
         echo "Installing connector plugins"
-        confluent-hub install --no-prompt debezium/debezium-connector-mysql:latest
+        # confluent-hub install --no-prompt debezium/debezium-connector-mysql:latest
         # confluent-hub install --no-prompt jcustenborder/kafka-connect-twitter:0.3.33
-        confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.3.2
+        # confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:5.3.2
         # confluent-hub install --no-prompt confluentinc/kafka-connect-syslog:latest
         # confluent-hub install --no-prompt neo4j/kafka-connect-neo4j:1.0.2
         echo "Launching Kafka Connect worker"
@@ -182,24 +182,24 @@ services:
      - MYSQL_ROOT_PASSWORD=root
     volumes:
      - ./mysql/user.sql:/docker-entrypoint-initdb.d/user.sql
-
+  
   elasticsearch:
     image: elasticsearch:7.5.1
-    hostname: elasticsearch
     container_name: elasticsearch
-    ports:
-      - 9200:9200
-      - 9300:9300
     environment:
-      DISCOVERY_TYPE: single-node
-  
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+
   kibana:
     image: kibana:7.5.1
     container_name: kibana
     ports:
-      - 5601:5601
-    environment:
-      SERVER_NAME: kibana
-      SERVER_HOST: localhost
-      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
-      XPACK_MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED: true
+      - "5601:5601"
