@@ -209,6 +209,8 @@ ksqldb is an event streaming database that is purposely build for stream process
 - stream : immutable, append-only. used for representing series of historical facts
 - tables: mutable, allow for representing latest version of each value per key
 
+docker container stop $(docker container ls -aq)
+
 #### Connect to ksqldb-cli
 docker-compose exec ksqldb-cli ksql http://ksqldb-server:8088
 ```
@@ -268,6 +270,20 @@ CREATE SINK CONNECTOR SINK_POSTGRES_LAGOS_TWEETS WITH (
   'topics'='LAGOS_TWEETS', 
   'key.converter'='org.apache.kafka.connect.storage. StringConverter', 
   'auto.create'='true'
+);
+```
+
+==============================================================
+### SINK CONNECTOR FOR ELASTICSEARCH
+=============================================================
+```
+CREATE SINK CONNECTOR ELASTICSEARCHSINK WITH (
+  'topics'='LAGOS_TWEETS', 
+  'connector.class'='io.confluent.connect.elasticsearch.ElasticsearchSinkConnector', 
+  'connection.url'='http://localhost:9200', 
+  'type.name'='type.name=kafkaconnect',
+  'key.ignore'='true'
+  'schema.ignore'='true'
 );
 ```
 
